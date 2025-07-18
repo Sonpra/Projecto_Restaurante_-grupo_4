@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - SGPR</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 380px;
+            text-align: center; /* Asegura que el contenido dentro del contenedor esté centrado */
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center; /* Centra el título */
+            font-size: 28px;
+            color: #0056b3; /* Un tono más oscuro para el título */
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: calc(100% - 22px);
+            padding: 12px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff; /* Azul Eléctrico */
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2); /* Sombra para el botón */
+        }
+        button:hover {
+            background-color: #0056b3; /* Un azul más oscuro al pasar el ratón */
+        }
+        .messages {
+            list-style: none;
+            padding: 10px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .messages li {
+            padding: 5px 0;
+        }
+        .messages .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .messages .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .messages .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+        .user-type-selector {
+            margin-bottom: 25px;
+            text-align: center;
+            padding: 10px;
+            background-color: #f0f8ff; /* Fondo ligeramente azulado */
+            border-radius: 5px;
+            border: 1px solid #e0eaf6;
+        }
+        .user-type-selector label {
+            display: inline-block;
+            margin: 0 15px;
+            cursor: pointer;
+            font-weight: normal;
+            color: #333;
+        }
+        .user-type-selector input[type="radio"] {
+            margin-right: 8px;
+            transform: scale(1.2); /* Hace el radio button un poco más grande */
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Bienvenido al Sistema de Gestión</h2>
+
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.username.label_tag }}
+                {{ form.username }}
+            </div>
+            <div class="form-group">
+                {{ form.password.label_tag }}
+                {{ form.password }}
+            </div>
+
+            <div class="user-type-selector">
+                <p style="margin-top: 0; font-weight: bold; color: #007bff;">¿Quién eres?</p>
+                <label>
+                    <input type="radio" name="user_type" value="common" checked> Usuario Común
+                </label>
+                <label>
+                    <input type="radio" name="user_type" value="admin"> Administrador
+                </label>
+            </div>
+
+            <button type="submit">Iniciar Sesión</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión</title>
+    <style>
+        /* Estilos Generales y Navbar */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 10vh; /* Ajuste para evitar scroll excesivo durante desarrollo */
+        }
+        .navbar {
+            background-color: #343a40; /* Gris oscuro para la barra superior */
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .navbar-buttons button {
+            background-color: #495057; /* Gris más claro para botones inactivos */
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .navbar-buttons button:hover {
+            background-color: #6c757d;
+            transform: translateY(-2px);
+        }
+        .navbar-buttons button.active {
+            background-color: #007bff; /* Azul eléctrico para el botón activo */
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.6);
+        }
+        .navbar .logout-btn {
+            background-color: #dc3545; /* Rojo para cerrar sesión */
+            margin-left: 20px;
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .navbar .logout-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Contenido Principal y Secciones */
+        .main-content {
+            flex: 1;
+            display: flex; /* Contenedor flex para las dos columnas */
+            padding: 20px;
+            max-width: 1400px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            gap: 20px; /* Espacio entre las columnas */
+        }
+        .tables-section {
+            flex: 2; /* Ocupa 2/3 del espacio para las mesas */
+            padding-right: 20px;
+            border-right: 1px solid #e0e0e0; /* Separador vertical suave */
+        }
+        .tables-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .tables-header h2 {
+            margin: 0;
+            font-size: 1.8em;
+            color: #333;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .create-table-btn {
+            background-color: #28a745; /* Verde para crear */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.2);
+        }
+        .create-table-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        /* Grid y Cards de Mesas */
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Mesas responsivas */
+            gap: 25px;
+            padding: 20px;
+            background-color: #fdfdfd;
+            border-radius: 8px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+        }
+        .table-card {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        .table-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        .table-card.active {
+            border-color: #007bff;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.6);
+            background-color: #e7f3ff;
+        }
+        .table-card h3 {
+            margin: 10px 0 5px;
+            color: #333;
+            font-size: 1.4em;
+        }
+        .table-card p {
+            color: #666;
+            font-size: 1em;
+            margin-bottom: 0;
+        }
+        .table-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 6px 10px;
+            border-radius: 50px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+        }
+        .status-Libre { background-color: #28a745; }
+        .status-Ocupada { background-color: #ffc107; color: #333; } /* Cambio de color para Ocupada */
+        .status-Pendiente { background-color: #007bff; }
+
+        /* Sección de Detalles del Pedido (Panel Lateral Derecho) */
+        .order-details-section {
+            flex: 1; /* Ocupa 1/3 del espacio */
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa; /* Fondo ligeramente diferente */
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .order-details-section h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            display: inline-block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #order-details-content {
+            flex: 1; /* Para que ocupe el espacio restante */
+            padding: 10px;
+            text-align: center;
+            color: #666;
+        }
+        #order-details-content.empty-state {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-style: italic;
+            color: #999;
+        }
+
+        /* Estilos de los Detalles de la Mesa dentro del panel lateral */
+        .detail-group {
+            margin-bottom: 15px;
+            text-align: left;
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #343a40;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            color: #555;
+            font-size: 1.1em;
+        }
+        .status-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .status-buttons button, .delete-table-btn {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease;
+        }
+        .status-buttons button:hover, .delete-table-btn:hover {
+            background-color: #5a6268;
+        }
+        .status-buttons button.btn-Libre { background-color: #28a745; }
+        .status-buttons button.btn-Libre:hover { background-color: #218838; }
+        .status-buttons button.btn-Ocupada { background-color: #ffc107; color: #333;} /* Cambio de color para Ocupada */
+        .status-buttons button.btn-Ocupada:hover { background-color: #e0a800; }
+        .status-buttons button.btn-Pendiente { background-color: #007bff; }
+        .status-buttons button.btn-Pendiente:hover { background-color: #0056b3; }
+
+        .delete-table-btn {
+            background-color: #dc3545; /* Rojo para eliminar */
+            width: calc(100% - 20px); /* Ocupa el ancho del panel */
+            margin-top: 20px;
+        }
+        .delete-table-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Mensajes de Django */
+        .messages {
+            list-style: none;
+            padding: 15px;
+            margin: 20px auto 0;
+            max-width: 1200px;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .messages li { margin: 0; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Estilos del Modal (Popup) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 450px;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .modal-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        .modal-form input[type="text"],
+        .modal-form input[type="number"],
+        .modal-form select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .modal-form .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-form .form-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        .modal-form .form-actions .btn-cancel {
+            background-color: #6c757d;
+            color: white;
+        }
+        .modal-form .form-actions .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+        .modal-form .form-actions .btn-create {
+            background-color: #007bff;
+            color: white;
+        }
+        .modal-form .form-actions .btn-create:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Sistema de Gestión</h1>
+        <div class="navbar-buttons">
+            <button id="btnCuenta" class="nav-button">Cuenta</button>
+            <button id="btnCarta" class="nav-button">Carta</button>
+            <button id="btnHistorial" class="nav-button">Historial</button>
+            <button id="btnPiso" class="nav-button">Piso</button>
+            <button id="btnRestaurante" class="nav-button">Restaurante</button>
+            <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="main-content">
+        <div class="tables-section">
+            <div class="tables-header">
+                <h2>Mesas del Restaurante</h2>
+                <button class="create-table-btn" onclick="openCreateTableModal()">Crear Mesa</button>
+            </div>
+            <div class="tables-grid">
+                </div>
+        </div>
+
+        <div class="order-details-section">
+            <h2 id="detailsPanelTitle">Detalles de la Mesa</h2>
+            <div id="order-details-content" class="empty-state">
+                <p>Selecciona una mesa para ver y gestionar sus detalles.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="createTableModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Crear Nueva Mesa</h3>
+            <form id="createTableForm" class="modal-form">
+                <label for="tableName">Nombre de la Mesa:</label>
+                <input type="text" id="tableName" required>
+
+                <label for="tableCapacity">Capacidad:</label>
+                <input type="number" id="tableCapacity" min="1" value="4" required>
+
+                <label for="tableStatus">Estado Inicial:</label>
+                <select id="tableStatus" required>
+                    <option value="Libre">Libre</option>
+                    <option value="Ocupada">Ocupada</option>
+                    <option value="Pendiente">Pendiente</option>
+                </select>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCreateTableModal()">Cancelar</button>
+                    <button type="submit" class="btn-create">Crear Mesa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const tablesGrid = document.querySelector('.tables-grid');
+        const detailsPanelTitle = document.getElementById('detailsPanelTitle');
+        const orderDetailsContent = document.getElementById('order-details-content');
+        let activeTableId = null;
+
+        // FUNCIÓN handleApiResponse CORREGIDA
+        async function handleApiResponse(response) {
+            const textData = await response.text(); // Lee el cuerpo de la respuesta UNA VEZ como texto
+
+            // Si la respuesta no es OK (ej. 400, 404, 500)
+            if (!response.ok) {
+                let errorDetails = {};
+                try {
+                    // Intenta parsear el texto leído como JSON
+                    errorDetails = JSON.parse(textData);
+                } catch (e) {
+                    // Si falla el parseo, no es JSON válido, usamos el texto completo como error
+                    errorDetails.error = textData || `Error HTTP: ${response.status} ${response.statusText}`;
+                }
+                // Lanza un error con el mensaje de error del servidor o un mensaje genérico
+                throw new Error(errorDetails.error || `Error desconocido: ${response.status} ${response.statusText}`);
+            }
+
+            // Si la respuesta es 204 No Content (como en DELETE exitoso)
+            if (response.status === 204) {
+                return {};
+            }
+
+            // Si la respuesta es OK y tiene contenido, intenta parsearlo como JSON
+            try {
+                return JSON.parse(textData);
+            } catch (e) {
+                console.warn('Respuesta exitosa de la API no es un JSON válido:', textData);
+                return {}; // O podrías lanzar un error si las respuestas exitosas *siempre* deben ser JSON
+            }
+        }
+
+        async function fetchAndRenderTables() {
+            try {
+                const data = await fetch('/api/mesas/').then(handleApiResponse);
+                const tablesData = data.mesas || []; // Asegurarse de que sea un array
+
+                tablesGrid.innerHTML = '';
+                if (tablesData.length === 0) {
+                    tablesGrid.innerHTML = '<p style="text-align: center; color: #777; margin-top: 50px;">No hay mesas creadas. Haz clic en "Crear Mesa" para empezar.</p>';
+                    select_table(null);
+                } else {
+                    tablesData.forEach(table => {
+                        const tableCard = document.createElement('div');
+                        tableCard.classList.add('table-card');
+                        if (table.id === activeTableId) {
+                            tableCard.classList.add('active');
+                        }
+
+                        const statusClass = `status-${table.estado.replace(/\s/g, '')}`;
+                        
+                        tableCard.innerHTML = `
+                            <h3>${table.nombre}</h3>
+                            <p>Capacidad: ${table.capacidad}</p>
+                            <span class="table-status ${statusClass}">${table.estado}</span>
+                        `;
+                        tableCard.dataset.tableId = table.id;
+                        tableCard.addEventListener('click', () => select_table(table.id));
+                        tablesGrid.appendChild(tableCard);
+                    });
+                    if (activeTableId === null && tablesData.length > 0) {
+                        select_table(tablesData[0].id);
+                    } else if (activeTableId !== null) {
+                        select_table(activeTableId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar las mesas:', error);
+                alert(`Error al cargar las mesas: ${error.message}`);
+                tablesGrid.innerHTML = '<p style="text-align: center; color: red; margin-top: 50px;">Error al cargar las mesas. Por favor, intenta recargar la página o contacta al soporte.</p>';
+            }
+        }
+
+        async function select_table(tableId) {
+            activeTableId = tableId;
+            const allTableCards = document.querySelectorAll('.table-card');
+            allTableCards.forEach(card => {
+                if (parseInt(card.dataset.tableId) === activeTableId) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
+            if (tableId) {
+                try {
+                    const selectedTable = await fetch(`/api/mesas/${tableId}/`).then(handleApiResponse);
+                    
+                    detailsPanelTitle.textContent = `Detalles de ${selectedTable.nombre}`;
+                    orderDetailsContent.classList.remove('empty-state');
+                    orderDetailsContent.innerHTML = `
+                        <div class="detail-group">
+                            <span class="detail-label">Nombre:</span>
+                            <span class="detail-value">${selectedTable.nombre}</span>
+                        </div>
+                        <div class="detail-group">
+                            <span class="detail-label">Capacidad:</span>
+                            <span class="detail-value">${selectedTable.capacidad} personas</span>
+                        </div>
+                        <div class="detail-group">
+                            <span class="detail-label">Estado Actual:</span>
+                            <span class="detail-value">${selectedTable.estado}</span>
+                        </div>
+
+                        <p style="text-align: center; margin-top: 25px; font-weight: bold; color: #007bff;">
+                            Detalles del Pedido (por implementar)
+                        </p>
+                        <p style="font-size: 0.9em; color: #777; margin-bottom: 25px;">
+                            Aquí se mostraría la lista de productos, cantidades, precios, etc.
+                        </p>
+
+                        <span class="detail-label" style="text-align: center; display: block;">Cambiar Estado:</span>
+                        <div class="status-buttons">
+                            <button class="btn-Libre" onclick="updateTableStatus(${tableId}, 'Libre')">Libre</button>
+                            <button class="btn-Ocupada" onclick="updateTableStatus(${tableId}, 'Ocupada')">Ocupada</button>
+                            <button class="btn-Pendiente" onclick="updateTableStatus(${tableId}, 'Pendiente')">Pendiente</button>
+                        </div>
+                        <button class="delete-table-btn" onclick="deleteTable(${tableId})">Eliminar Mesa</button>
+                    `;
+                } catch (error) {
+                    console.error(`Error al obtener detalles de la mesa ${tableId}:`, error);
+                    detailsPanelTitle.textContent = `Error al cargar detalles`;
+                    orderDetailsContent.classList.add('empty-state');
+                    orderDetailsContent.innerHTML = `<p style="color: red;">No se pudieron cargar los detalles de la mesa: ${error.message}.</p>`;
+                    activeTableId = null;
+                    await fetchAndRenderTables();
+                }
+            } else {
+                detailsPanelTitle.textContent = `Detalles de la Mesa`;
+                orderDetailsContent.classList.add('empty-state');
+                orderDetailsContent.innerHTML = `<p>Selecciona una mesa para ver y gestionar sus detalles.</p>`;
+            }
+        }
+
+        async function updateTableStatus(tableId, newStatus) {
+            try {
+                await fetch(`/api/mesas/${tableId}/`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: newStatus })
+                }).then(handleApiResponse);
+
+                await fetchAndRenderTables();
+                alert(`Estado de la Mesa ${tableId} actualizado a "${newStatus}".`);
+            } catch (error) {
+                console.error(`Error al actualizar el estado de la mesa ${tableId}:`, error);
+                alert(`Error al actualizar el estado de la mesa: ${error.message}`);
+            }
+        }
+
+        async function deleteTable(tableId) {
+            if (confirm(`¿Estás seguro de que quieres eliminar esta mesa? Esta acción es irreversible.`)) {
+                try {
+                    await fetch(`/api/mesas/${tableId}/`, { method: 'DELETE' }).then(handleApiResponse);
+
+                    if (activeTableId === tableId) {
+                        activeTableId = null;
+                    }
+                    await fetchAndRenderTables();
+                    select_table(null);
+                    alert('Mesa eliminada correctamente.');
+                } catch (error) {
+                    console.error(`Error al eliminar la mesa ${tableId}:`, error);
+                    alert(`Error al eliminar la mesa: ${error.message}`);
+                }
+            }
+        }
+
+        const createTableModal = document.getElementById('createTableModal');
+        const createTableForm = document.getElementById('createTableForm');
+
+        function openCreateTableModal() {
+            createTableModal.classList.add('show');
+            createTableForm.reset();
+            document.getElementById('tableName').focus();
+        }
+
+        function closeCreateTableModal() {
+            createTableModal.classList.remove('show');
+        }
+
+        createTableForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const tableName = document.getElementById('tableName').value.trim();
+            const tableCapacity = parseInt(document.getElementById('tableCapacity').value);
+            const tableStatus = document.getElementById('tableStatus').value;
+
+            if (tableName && tableCapacity > 0 && tableStatus) {
+                try {
+                    const newTableData = {
+                        nombre: tableName,
+                        capacidad: tableCapacity,
+                        estado: tableStatus
+                    };
+                    const createdTable = await fetch('/api/mesas/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newTableData)
+                    }).then(handleApiResponse);
+
+                    alert(`Mesa "${createdTable.nombre}" creada con éxito.`);
+                    closeCreateTableModal();
+                    await fetchAndRenderTables();
+                    select_table(createdTable.id);
+                } catch (error) {
+                    console.error('Error al crear la mesa:', error);
+                    alert(`Error al crear la mesa: ${error.message}`);
+                }
+            } else {
+                alert('Por favor, completa todos los campos y asegúrate de que la capacidad sea un número positivo.');
+            }
+        });
+
+        const navButtons = document.querySelectorAll('.nav-button');
+        navButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                alert(`Haz clic en ${this.textContent}. Funcionalidad por implementar.`);
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndRenderTables();
+            if (navButtons.length > 0) {
+                navButtons[0].classList.add('active');
+            }
+        });
+
+    </script>
+</body>
+</html>
