@@ -1,16 +1,19 @@
-from django.shortcuts import render, redirect, get_object_or_404
+# Ruta: Pagina_Web/Pagina_Web/views.py
+from django.shortcuts import render, redirect
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt # Importar para deshabilitar CSRF en API (solo para desarrollo)
-import json # Para parsear el cuerpo de las peticiones POST/PUT
-from .models import Mesa
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from .models import Mesa, Plato, Pedido, DetallePedido
+from .serializers import MesaSerializer, PlatoSerializer, PedidoSerializer, DetallePedidoSerializer
 
-# Vistas de autenticación y dashboard
+# --- Vistas de Páginas HTML ---
+
 def login_view(request):
-    print("Login view llamada")
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -19,17 +22,13 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(request, f"¡Bienvenido, {username}!")
+                # La redirección ya diferencia si es admin (staff) o no
                 if user.is_staff:
-                    return redirect('/admin_dashboard/')
+                    return redirect('admin_dashboard')
                 else:
-                    return redirect('/dashboard/')
-            else:
-                messages.error(request, "Usuario o contraseña inválidos.")
-        else:
-            messages.error(request, "Usuario o contraseña inválidos.")
-    else:
-        form = AuthenticationForm()
+                    return redirect('dashboard')
+        messages.error(request, "Usuario o contraseña inválidos.")
+    form = AuthenticationForm()
     return render(request, 'Pagina_Web/login.html', {'form': form})
 
 def logout_view(request):
@@ -39,84 +38,94 @@ def logout_view(request):
 
 @login_required
 def dashboard_view(request):
-    return render(request, 'Pagina_Web/dashboard.html')
+    context = {'is_admin': request.user.is_staff}
+    return render(request, 'Pagina_Web/dashboard.html', context)
 
 @login_required
 def admin_dashboard_view(request):
     if not request.user.is_staff:
-        messages.error(request, "No tienes permisos para acceder a esta página.")
         return redirect('dashboard')
-    return render(request, 'Pagina_Web/admin_dashboard.html')
+    context = {'is_admin': request.user.is_staff}
+    # Por ahora, el admin usa el mismo dashboard, pero recibe is_admin = True
+    return render(request, 'Pagina_Web/dashboard.html', context)
+
+@login_required
+def historial_view(request):
+    return render(request, 'Pagina_Web/historial.html')
 
 
-# VISTAS DE LA API PARA MESAS
-@csrf_exempt
-def mesas_api(request, table_id=None):
-    if not request.user.is_authenticated: # Asegura que el usuario esté logueado para usar la API
-        return JsonResponse({'error': 'No autenticado'}, status=401)
+# --- VISTAS DE LA API (ViewSets sin permisos especiales) ---
 
-    # Listar todas las mesas (GET /api/mesas/)
-    if request.method == 'GET' and table_id is None:
-        mesas = Mesa.objects.all().values('id', 'nombre', 'capacidad', 'estado')
-        return JsonResponse({'mesas': list(mesas)}, safe=False)
+class MesaViewSet(viewsets.ModelViewSet):
+    queryset = Mesa.objects.all()
+    serializer_class = MesaSerializer
 
-    # Obtener detalles de una mesa específica (GET /api/mesas/<id>/)
-    if request.method == 'GET' and table_id is not None:
-        mesa = get_object_or_404(Mesa, id=table_id)
-        return JsonResponse({
-            'id': mesa.id,
-            'nombre': mesa.nombre,
-            'capacidad': mesa.capacidad,
-            'estado': mesa.estado
-        })
+    @action(detail=True, methods=['post'])
+    def iniciar_pedido(self, request, pk=None):
+        mesa = self.get_object()
+        if mesa.estado == 'Ocupada':
+            return Response({'error': 'La mesa ya está ocupada.'}, status=status.HTTP_400_BAD_REQUEST)
+        pedido = Pedido.objects.create(mesa=mesa)
+        mesa.estado = 'Ocupada'
+        mesa.save()
+        serializer = PedidoSerializer(pedido)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    # Crear una nueva mesa (POST /api/mesas/)
-    if request.method == 'POST' and table_id is None:
+class PlatoViewSet(viewsets.ModelViewSet):
+    queryset = Plato.objects.all()
+    serializer_class = PlatoSerializer
+
+class PedidoViewSet(viewsets.ModelViewSet):
+    queryset = Pedido.objects.all()
+    serializer_class = PedidoSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['mesa', 'completado']
+
+    @action(detail=True, methods=['post'])
+    def agregar_plato(self, request, pk=None):
+        pedido = self.get_object()
+        plato_id = request.data.get('plato_id')
+        if not plato_id:
+            return Response({'error': 'El ID del plato es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            data = json.loads(request.body)
-            nombre = data.get('nombre')
-            capacidad = data.get('capacidad')
-            estado = data.get('estado', 'Libre') # Default a 'Libre' si no se especifica
+            plato = Plato.objects.get(id=plato_id)
+        except Plato.DoesNotExist:
+            return Response({'error': 'El plato no existe.'}, status=status.HTTP_404_NOT_FOUND)
+        detalle, created = DetallePedido.objects.get_or_create(pedido=pedido, plato=plato)
+        if not created:
+            detalle.cantidad += 1
+            detalle.save()
+        serializer = self.get_serializer(pedido)
+        return Response(serializer.data)
 
-            if not nombre or not capacidad:
-                return JsonResponse({'error': 'Nombre y capacidad son requeridos.'}, status=400)
-
-            mesa = Mesa.objects.create(nombre=nombre, capacidad=capacidad, estado=estado)
-            return JsonResponse({
-                'id': mesa.id,
-                'nombre': mesa.nombre,
-                'capacidad': mesa.capacidad,
-                'estado': mesa.estado
-            }, status=201)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Formato JSON inválido.'}, status=400)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-
-    # Actualizar una mesa existente (PUT /api/mesas/<id>/)
-    if request.method == 'PUT' and table_id is not None:
-        mesa = get_object_or_404(Mesa, id=table_id)
+    @action(detail=True, methods=['post'])
+    def remover_plato(self, request, pk=None):
+        pedido = self.get_object()
+        plato_id = request.data.get('plato_id')
+        if not plato_id:
+            return Response({'error': 'El ID del plato es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            data = json.loads(request.body)
-            mesa.nombre = data.get('nombre', mesa.nombre)
-            mesa.capacidad = data.get('capacidad', mesa.capacidad)
-            mesa.estado = data.get('estado', mesa.estado)
-            mesa.save()
-            return JsonResponse({
-                'id': mesa.id,
-                'nombre': mesa.nombre,
-                'capacidad': mesa.capacidad,
-                'estado': mesa.estado
-            })
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Formato JSON inválido.'}, status=400)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            detalle = DetallePedido.objects.get(pedido=pedido, plato_id=plato_id)
+        except DetallePedido.DoesNotExist:
+            return Response({'error': 'Este plato no se encuentra en el pedido.'}, status=status.HTTP_404_NOT_FOUND)
+        if detalle.cantidad > 1:
+            detalle.cantidad -= 1
+            detalle.save()
+        else:
+            detalle.delete()
+        serializer = self.get_serializer(pedido)
+        return Response(serializer.data)
 
-    # Eliminar una mesa (DELETE /api/mesas/<id>/)
-    if request.method == 'DELETE' and table_id is not None:
-        mesa = get_object_or_404(Mesa, id=table_id)
-        mesa.delete()
-        return JsonResponse({}, status=204) # No Content for successful deletion
+    @action(detail=True, methods=['post'])
+    def finalizar(self, request, pk=None):
+        pedido = self.get_object()
+        pedido.completado = True
+        pedido.save()
+        mesa = pedido.mesa
+        mesa.estado = 'Libre'
+        mesa.save()
+        return Response({'status': 'Pedido finalizado'}, status=status.HTTP_200_OK)
 
-    return JsonResponse({'error': 'Método no permitido o ruta inválida.'}, status=405)
+class DetallePedidoViewSet(viewsets.ModelViewSet):
+    queryset = DetallePedido.objects.all()
+    serializer_class = DetallePedidoSerializer

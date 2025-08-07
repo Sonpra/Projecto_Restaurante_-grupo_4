@@ -1,0 +1,255 @@
+/* Contenido completo para dashboard.css */
+
+/* Estilos Generales y Navbar */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+.navbar {
+    background-color: #343a40;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.navbar h1 { margin: 0; font-size: 24px; }
+.navbar-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.nav-button {
+    background-color: #495057;
+    color: white !important;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+.nav-button:hover {
+    background-color: #6c757d;
+    transform: translateY(-2px);
+}
+.nav-button.active {
+    background-color: #007bff;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.6);
+}
+.navbar .logout-btn {
+    background-color: #dc3545;
+    color: white;
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+.navbar .logout-btn:hover { background-color: #c82333; }
+
+/* ... (resto de los estilos que ya teníamos) ... */
+.main-content {
+    flex: 1; display: flex; padding: 20px; max-width: 1400px;
+    margin: 20px auto; background-color: white; border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); gap: 20px;
+}
+/* ... etc ... */
+.tables-section {
+    flex: 2;
+    padding-right: 20px;
+    border-right: 1px solid #e0e0e0;
+}
+.tables-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+}
+.tables-header h2 { margin: 0; font-size: 1.8em; color: #333; }
+.create-table-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.2);
+}
+.create-table-btn:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+/* Grid y Cards de Mesas */
+.tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 25px;
+    padding: 20px;
+    background-color: #fdfdfd;
+    border-radius: 8px;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+}
+.table-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    position: relative;
+}
+.table-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+.table-card.active {
+    border-color: #007bff;
+    box-shadow: 0 0 20px rgba(0, 123, 255, 0.6);
+    background-color: #e7f3ff;
+}
+.table-card h3 { margin: 10px 0 5px; color: #333; font-size: 1.4em; }
+.table-card p { color: #666; font-size: 1em; margin-bottom: 0; }
+.table-status {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 6px 10px;
+    border-radius: 50px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: white;
+}
+.status-Libre { background-color: #28a745; }
+.status-Ocupada { background-color: #ffc107; color: #333; }
+.status-Pendiente { background-color: #007bff; }
+
+/* Sección de Detalles del Pedido (Panel Lateral Derecho) */
+.order-details-section {
+    flex: 1;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.order-details-section h2 {
+    text-align: center; color: #333; margin: 0 0 25px 0; font-size: 1.8em;
+    border-bottom: 2px solid #007bff; padding-bottom: 10px;
+}
+#order-details-content {
+    flex: 1; padding: 10px; text-align: center; color: #666;
+}
+#order-details-content.empty-state {
+    display: flex; justify-content: center; align-items: center; font-style: italic; color: #999;
+}
+.detail-group { margin-bottom: 15px; text-align: left; background-color: #e9ecef; padding: 10px 15px; border-radius: 5px; }
+.detail-label { font-weight: bold; color: #343a40; display: block; margin-bottom: 5px; }
+.detail-value { color: #555; font-size: 1.1em; }
+.status-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; margin-bottom: 20px; }
+.status-buttons button, .delete-table-btn {
+    background-color: #6c757d; color: white; padding: 10px 15px; border: none; border-radius: 5px;
+    cursor: pointer; font-size: 0.95em; transition: background-color 0.3s ease;
+}
+.status-buttons button:hover, .delete-table-btn:hover { background-color: #5a6268; }
+.status-buttons button.btn-Libre { background-color: #28a745; }
+.status-buttons button.btn-Ocupada { background-color: #ffc107; color: #333;}
+.status-buttons button.btn-Pendiente { background-color: #007bff; }
+.delete-table-btn { background-color: #dc3545; width: calc(100% - 20px); }
+.delete-table-btn:hover { background-color: #c82333; }
+.order-item, .order-total { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+.order-total { font-size: 1.2em; margin-top: 10px; border-bottom: none; }
+.order-item-actions { display: flex; align-items: center; gap: 15px; }
+.remove-item-btn {
+    background-color: #dc3545; color: white; border: none; width: 24px; height: 24px;
+    border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 24px;
+    text-align: center; font-weight: bold; padding: 0; transition: background-color 0.2s ease;
+}
+.remove-item-btn:hover { background-color: #c82333; }
+.order-main-actions { display: flex; gap: 10px; margin-top: 20px; }
+.order-main-actions button {
+    flex: 1; padding: 12px; font-size: 1em; font-weight: bold; border: none;
+    border-radius: 5px; cursor: pointer; transition: background-color 0.3s, transform 0.2s;
+}
+.order-main-actions button:hover { transform: translateY(-2px); }
+.add-products-btn { background-color: #007bff; color: white; }
+.finalize-btn { background-color: #28a745; color: white; }
+
+/* Mensajes de Django */
+.messages {
+    list-style: none; padding: 15px; margin: 20px auto 0; max-width: 1200px;
+    background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+    border-radius: 5px; text-align: center;
+}
+.messages li { margin: 0; }
+.messages.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* Estilos del Modal (Genérico) */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center;
+    align-items: center; z-index: 1000; opacity: 0; visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal-overlay.show { opacity: 1; visibility: visible; }
+.modal-content {
+    background-color: white; padding: 30px; border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); width: 90%;
+    transform: translateY(-20px); transition: transform 0.3s ease;
+}
+.modal-overlay.show .modal-content { transform: translateY(0); }
+.modal-content h3 { margin-top: 0; color: #333; font-size: 1.5em; margin-bottom: 20px; text-align: center; }
+
+/* Modal para Crear Mesa */
+#createTableModal .modal-content { max-width: 450px; }
+.modal-form label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+.modal-form input, .modal-form select {
+    width: calc(100% - 20px); padding: 10px; margin-bottom: 15px; border: 1px solid #ddd;
+    border-radius: 5px; font-size: 1em; box-sizing: border-box;
+}
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.form-actions button {
+    padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;
+    font-size: 1em; transition: background-color 0.3s ease;
+}
+.form-actions .btn-cancel { background-color: #6c757d; color: white; }
+.form-actions .btn-create { background-color: #007bff; color: white; }
+
+/* Modal para la Carta */
+#menuModal .modal-content { max-width: 800px; }
+#menu-items-container {
+    max-height: 60vh; overflow-y: auto; padding-right: 15px;
+}
+.menu-tabs { display: flex; border-bottom: 2px solid #dee2e6; margin-bottom: 15px; }
+.tab-button {
+    padding: 10px 20px; cursor: pointer; border: none; background-color: transparent;
+    font-size: 1.1em; color: #495057; border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+.tab-button:hover { background-color: #f8f9fa; color: #007bff; }
+.tab-button.active { border-color: #007bff; color: #007bff; font-weight: bold; }
+.menu-tab-pane { display: none; }
+.menu-tab-pane.active { display: block; }
+.menu-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px; border-bottom: 1px solid #eee;
+}
+.menu-item button {
+    background-color: #007bff; color: white; border: none; padding: 5px 10px;
+    border-radius: 5px; cursor: pointer;
+}
+.menu-item button:hover { background-color: #0056b3; }

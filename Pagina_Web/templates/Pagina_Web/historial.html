@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Pedidos - SGPR</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <style>
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .history-table th, .history-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .history-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .history-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>SGPR - Historial</h1>
+        <div class="navbar-buttons">
+            <a href="{% url 'dashboard' %}" class="nav-button">Dashboard</a>
+            <a href="{% url 'historial' %}" class="nav-button active">Historial</a>
+            <a href="#" class="nav-button">Carta</a>
+            <a href="#" class="nav-button">Piso</a>
+            <a href="#" class="nav-button">Restaurante</a>
+            <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <div class="main-content" style="display: block; flex-direction: column;">
+        <div class="tables-header">
+            <h2>Historial de Pedidos Completados</h2>
+        </div>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>Mesa</th>
+                    <th>Fecha y Hora</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="history-table-body">
+                </tbody>
+        </table>
+    </div>
+
+    <script src="{% static 'js/historial.js' %}" defer></script>
+</body>
+</html>
