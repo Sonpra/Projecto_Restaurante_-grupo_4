@@ -116,6 +116,7 @@
             background-color: #fdfdfd;
             border-radius: 8px;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+            flex-grow: 1; /* Permite que el grid de mesas ocupe el espacio restante */
         }
         .table-card {
             background-color: #f8f9fa;
@@ -353,6 +354,59 @@
         .modal-form .form-actions .btn-create:hover {
             background-color: #0056b3;
         }
+
+        /* Estilos para la selección de pisos */
+        .floor-selection {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e9f5ff;
+            border-radius: 8px;
+            border: 1px solid #cce7ff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .floor-selection label {
+            font-weight: bold;
+            color: #0056b3;
+            margin-right: 10px;
+        }
+        .floor-selection select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #a8d8ff;
+            font-size: 1em;
+            background-color: white;
+            cursor: pointer;
+            min-width: 150px;
+        }
+        .floor-selection button {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+        }
+        .floor-selection button:hover {
+            background-color: #0056b3;
+        }
+        .floor-selection .add-floor-btn {
+            background-color: #28a745;
+        }
+        .floor-selection .add-floor-btn:hover {
+            background-color: #218838;
+        }
+        .floor-selection .delete-floor-btn {
+            background-color: #dc3545;
+        }
+        .floor-selection .delete-floor-btn:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -362,7 +416,7 @@
             <button id="btnCuenta" class="nav-button">Cuenta</button>
             <button id="btnCarta" class="nav-button">Carta</button>
             <button id="btnHistorial" class="nav-button">Historial</button>
-            <button id="btnPiso" class="nav-button">Piso</button>
+            <button id="btnPiso" class="nav-button active">Piso</button> <!-- Piso activo por defecto -->
             <button id="btnRestaurante" class="nav-button">Restaurante</button>
             <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
         </div>
@@ -378,12 +432,19 @@
 
     <div class="main-content">
         <div class="tables-section">
+            <div class="floor-selection">
+                <label for="floorSelector">Seleccionar Piso:</label>
+                <select id="floorSelector"></select>
+                <button class="add-floor-btn" onclick="openCreateFloorModal()">Añadir Piso</button>
+                <button class="delete-floor-btn" onclick="deleteSelectedFloor()">Eliminar Piso</button>
+            </div>
             <div class="tables-header">
-                <h2>Mesas del Restaurante</h2>
+                <h2 id="currentFloorTablesTitle">Mesas del Restaurante</h2>
                 <button class="create-table-btn" onclick="openCreateTableModal()">Crear Mesa</button>
             </div>
             <div class="tables-grid">
-                </div>
+                <!-- Las mesas se cargarán aquí -->
+            </div>
         </div>
 
         <div class="order-details-section">
@@ -394,26 +455,45 @@
         </div>
     </div>
 
+    <!-- Modal para Crear Nueva Mesa -->
     <div id="createTableModal" class="modal-overlay">
         <div class="modal-content">
             <h3>Crear Nueva Mesa</h3>
             <form id="createTableForm" class="modal-form">
                 <label for="tableName">Nombre de la Mesa:</label>
                 <input type="text" id="tableName" required>
-
                 <label for="tableCapacity">Capacidad:</label>
                 <input type="number" id="tableCapacity" min="1" value="4" required>
-
                 <label for="tableStatus">Estado Inicial:</label>
                 <select id="tableStatus" required>
                     <option value="Libre">Libre</option>
                     <option value="Ocupada">Ocupada</option>
                     <option value="Pendiente">Pendiente</option>
                 </select>
-
+                <label for="tableFloor">Asignar a Piso:</label>
+                <select id="tableFloor" required>
+                    <!-- Opciones de pisos se cargarán aquí dinámicamente -->
+                </select>
                 <div class="form-actions">
                     <button type="button" class="btn-cancel" onclick="closeCreateTableModal()">Cancelar</button>
                     <button type="submit" class="btn-create">Crear Mesa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Crear Nuevo Piso -->
+    <div id="createFloorModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Crear Nuevo Piso</h3>
+            <form id="createFloorForm" class="modal-form">
+                <label for="floorName">Nombre del Piso:</label>
+                <input type="text" id="floorName" required>
+                <label for="floorDescription">Descripción (opcional):</label>
+                <textarea id="floorDescription" rows="3"></textarea>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCreateFloorModal()">Cancelar</button>
+                    <button type="submit" class="btn-create">Crear Piso</button>
                 </div>
             </form>
         </div>
@@ -423,7 +503,11 @@
         const tablesGrid = document.querySelector('.tables-grid');
         const detailsPanelTitle = document.getElementById('detailsPanelTitle');
         const orderDetailsContent = document.getElementById('order-details-content');
+        const floorSelector = document.getElementById('floorSelector');
+        const currentFloorTablesTitle = document.getElementById('currentFloorTablesTitle');
+        const tableFloorSelect = document.getElementById('tableFloor'); // Select para el piso en el modal de mesa
         let activeTableId = null;
+        let activeFloorId = null; // Nuevo: ID del piso actualmente seleccionado
 
         // FUNCIÓN handleApiResponse CORREGIDA
         async function handleApiResponse(response) {
@@ -457,14 +541,123 @@
             }
         }
 
-        async function fetchAndRenderTables() {
+        // --- Funciones para Pisos ---
+        async function fetchAndRenderFloors() {
             try {
-                const data = await fetch('/api/mesas/').then(handleApiResponse);
-                const tablesData = data.mesas || []; // Asegurarse de que sea un array
+                const data = await fetch('/api/pisos/').then(handleApiResponse);
+                const floorsData = data.pisos || [];
+                floorSelector.innerHTML = '';
+                tableFloorSelect.innerHTML = ''; // Limpiar también el select del modal de mesa
+                if (floorsData.length === 0) {
+                    floorSelector.innerHTML = '<option value="">No hay pisos</option>';
+                    tableFloorSelect.innerHTML = '<option value="">No hay pisos</option>';
+                    activeFloorId = null;
+                    currentFloorTablesTitle.textContent = 'Mesas (Sin Piso Seleccionado)';
+                    fetchAndRenderTables(null); // Cargar mesas sin filtro de piso
+                    return;
+                }
+                floorsData.forEach(floor => {
+                    const option = document.createElement('option');
+                    option.value = floor.id;
+                    option.textContent = floor.nombre;
+                    floorSelector.appendChild(option);
+                    const modalOption = option.cloneNode(true); // Clonar para el modal de mesa
+                    tableFloorSelect.appendChild(modalOption);
+                });
 
+                // Seleccionar el primer piso por defecto o el activo si existe
+                if (activeFloorId === null || !floorsData.some(f => f.id === activeFloorId)) {
+                    activeFloorId = floorsData[0].id;
+                }
+                floorSelector.value = activeFloorId;
+                tableFloorSelect.value = activeFloorId; // Sincronizar el select del modal
+                const selectedFloorName = floorsData.find(f => f.id === activeFloorId)?.nombre || 'Desconocido';
+                currentFloorTablesTitle.textContent = `Mesas en ${selectedFloorName}`;
+                fetchAndRenderTables(activeFloorId); // Cargar mesas del piso seleccionado
+            } catch (error) {
+                console.error('Error al cargar los pisos:', error);
+                alert(`Error al cargar los pisos: ${error.message}`);
+                floorSelector.innerHTML = '<option value="">Error al cargar pisos</option>';
+                tableFloorSelect.innerHTML = '<option value="">Error al cargar pisos</option>';
+                currentFloorTablesTitle.textContent = 'Mesas (Error al cargar pisos)';
+                tablesGrid.innerHTML = '<p style="text-align: center; color: red; margin-top: 50px;">Error al cargar los pisos. Por favor, intenta recargar la página o contacta al soporte.</p>';
+            }
+        }
+        floorSelector.addEventListener('change', (event) => {
+            activeFloorId = parseInt(event.target.value);
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            currentFloorTablesTitle.textContent = `Mesas en ${selectedOption.textContent}`;
+            fetchAndRenderTables(activeFloorId);
+            select_table(null); // Deseleccionar cualquier mesa al cambiar de piso
+        });
+        const createFloorModal = document.getElementById('createFloorModal');
+        const createFloorForm = document.getElementById('createFloorForm');
+        function openCreateFloorModal() {
+            createFloorModal.classList.add('show');
+            createFloorForm.reset();
+            document.getElementById('floorName').focus();
+        }
+        function closeCreateFloorModal() {
+            createFloorModal.classList.remove('show');
+        }
+        createFloorForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const floorName = document.getElementById('floorName').value.trim();
+            const floorDescription = document.getElementById('floorDescription').value.trim();
+            if (floorName) {
+                try {
+                    const newFloorData = {
+                        nombre: floorName,
+                        descripcion: floorDescription
+                    };
+                    const createdFloor = await fetch('/api/pisos/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newFloorData)
+                    }).then(handleApiResponse);
+                    alert(`Piso "${createdFloor.nombre}" creado con éxito.`);
+                    closeCreateFloorModal();
+                    activeFloorId = createdFloor.id; // Seleccionar el nuevo piso
+                    await fetchAndRenderFloors(); // Recargar pisos y mesas
+                } catch (error) {
+                    console.error('Error al crear el piso:', error);
+                    alert(`Error al crear el piso: ${error.message}`);
+                }
+            } else {
+                alert('Por favor, ingresa un nombre para el piso.');
+            }
+        });
+        async function deleteSelectedFloor() {
+            if (!activeFloorId) {
+                alert('Por favor, selecciona un piso para eliminar.');
+                return;
+            }
+            const selectedFloorName = floorSelector.options[floorSelector.selectedIndex].textContent;
+            if (confirm(`¿Estás seguro de que quieres eliminar el piso "${selectedFloorName}"? Todas las mesas asociadas a este piso quedarán sin piso.`)) {
+                try {
+                    await fetch(`/api/pisos/${activeFloorId}/`, { method: 'DELETE' }).then(handleApiResponse);
+                    alert(`Piso "${selectedFloorName}" eliminado correctamente.`);
+                    activeFloorId = null; // Resetear el piso activo
+                    await fetchAndRenderFloors(); // Recargar pisos y mesas
+                    select_table(null); // Deseleccionar cualquier mesa
+                } catch (error) {
+                    console.error(`Error al eliminar el piso ${activeFloorId}:`, error);
+                    alert(`Error al eliminar el piso: ${error.message}`);
+                }
+            }
+        }
+        // --- Funciones para Mesas (Modificadas) ---
+        async function fetchAndRenderTables(floorId = null) {
+            try {
+                let url = '/api/mesas/';
+                if (floorId !== null) {
+                    url += `?piso_id=${floorId}`;
+                }
+                const data = await fetch(url).then(handleApiResponse);
+                const tablesData = data.mesas || [];
                 tablesGrid.innerHTML = '';
                 if (tablesData.length === 0) {
-                    tablesGrid.innerHTML = '<p style="text-align: center; color: #777; margin-top: 50px;">No hay mesas creadas. Haz clic en "Crear Mesa" para empezar.</p>';
+                    tablesGrid.innerHTML = '<p style="text-align: center; color: #777; margin-top: 50px;">No hay mesas creadas en este piso. Haz clic en "Crear Mesa" para empezar.</p>';
                     select_table(null);
                 } else {
                     tablesData.forEach(table => {
@@ -473,7 +666,6 @@
                         if (table.id === activeTableId) {
                             tableCard.classList.add('active');
                         }
-
                         const statusClass = `status-${table.estado.replace(/\s/g, '')}`;
                         
                         tableCard.innerHTML = `
@@ -485,10 +677,15 @@
                         tableCard.addEventListener('click', () => select_table(table.id));
                         tablesGrid.appendChild(tableCard);
                     });
-                    if (activeTableId === null && tablesData.length > 0) {
-                        select_table(tablesData[0].id);
-                    } else if (activeTableId !== null) {
-                        select_table(activeTableId);
+                    // Si no hay mesa activa o la mesa activa no está en el piso actual, selecciona la primera
+                    if (activeTableId === null || !tablesData.some(t => t.id === activeTableId)) {
+                        if (tablesData.length > 0) {
+                            select_table(tablesData[0].id);
+                        } else {
+                            select_table(null);
+                        }
+                    } else {
+                        select_table(activeTableId); // Re-seleccionar la mesa activa para actualizar detalles
                     }
                 }
             } catch (error) {
@@ -528,7 +725,10 @@
                             <span class="detail-label">Estado Actual:</span>
                             <span class="detail-value">${selectedTable.estado}</span>
                         </div>
-
+                        <div class="detail-group">
+                            <span class="detail-label">Piso:</span>
+                            <span class="detail-value">${selectedTable.piso_nombre || 'Sin Piso'}</span>
+                        </div>
                         <p style="text-align: center; margin-top: 25px; font-weight: bold; color: #007bff;">
                             Detalles del Pedido (por implementar)
                         </p>
@@ -550,7 +750,7 @@
                     orderDetailsContent.classList.add('empty-state');
                     orderDetailsContent.innerHTML = `<p style="color: red;">No se pudieron cargar los detalles de la mesa: ${error.message}.</p>`;
                     activeTableId = null;
-                    await fetchAndRenderTables();
+                    await fetchAndRenderTables(activeFloorId); // Recargar mesas del piso actual
                 }
             } else {
                 detailsPanelTitle.textContent = `Detalles de la Mesa`;
@@ -566,8 +766,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ estado: newStatus })
                 }).then(handleApiResponse);
-
-                await fetchAndRenderTables();
+                await fetchAndRenderTables(activeFloorId); // Recargar mesas del piso actual
                 alert(`Estado de la Mesa ${tableId} actualizado a "${newStatus}".`);
             } catch (error) {
                 console.error(`Error al actualizar el estado de la mesa ${tableId}:`, error);
@@ -579,11 +778,10 @@
             if (confirm(`¿Estás seguro de que quieres eliminar esta mesa? Esta acción es irreversible.`)) {
                 try {
                     await fetch(`/api/mesas/${tableId}/`, { method: 'DELETE' }).then(handleApiResponse);
-
                     if (activeTableId === tableId) {
                         activeTableId = null;
                     }
-                    await fetchAndRenderTables();
+                    await fetchAndRenderTables(activeFloorId); // Recargar mesas del piso actual
                     select_table(null);
                     alert('Mesa eliminada correctamente.');
                 } catch (error) {
@@ -597,8 +795,16 @@
         const createTableForm = document.getElementById('createTableForm');
 
         function openCreateTableModal() {
+            if (!activeFloorId && floorSelector.options.length > 0 && floorSelector.options[0].value === "") {
+                alert('No hay pisos creados. Por favor, crea un piso primero para poder añadir mesas.');
+                return;
+            }
             createTableModal.classList.add('show');
             createTableForm.reset();
+            // Asegurarse de que el select de piso en el modal tenga el piso activo seleccionado
+            if (activeFloorId) {
+                tableFloorSelect.value = activeFloorId;
+            }
             document.getElementById('tableName').focus();
         }
 
@@ -608,34 +814,39 @@
 
         createTableForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-
             const tableName = document.getElementById('tableName').value.trim();
             const tableCapacity = parseInt(document.getElementById('tableCapacity').value);
             const tableStatus = document.getElementById('tableStatus').value;
-
-            if (tableName && tableCapacity > 0 && tableStatus) {
+            const tablePisoId = document.getElementById('tableFloor').value; // Obtener el ID del piso
+            if (tableName && tableCapacity > 0 && tableStatus && tablePisoId) {
                 try {
                     const newTableData = {
                         nombre: tableName,
                         capacidad: tableCapacity,
-                        estado: tableStatus
+                        estado: tableStatus,
+                        piso_id: parseInt(tablePisoId) // Enviar el ID del piso
                     };
                     const createdTable = await fetch('/api/mesas/', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(newTableData)
                     }).then(handleApiResponse);
-
-                    alert(`Mesa "${createdTable.nombre}" creada con éxito.`);
+                    alert(`Mesa "${createdTable.nombre}" creada con éxito en el piso "${createdTable.piso_nombre}".`);
                     closeCreateTableModal();
-                    await fetchAndRenderTables();
-                    select_table(createdTable.id);
+                    // Si la mesa se creó en el piso actualmente seleccionado, actualizar la vista
+                    if (createdTable.piso_id === activeFloorId) {
+                        await fetchAndRenderTables(activeFloorId);
+                        select_table(createdTable.id);
+                    } else {
+                        // Si se creó en otro piso, solo recargar los pisos para asegurar que el select esté actualizado
+                        await fetchAndRenderFloors();
+                    }
                 } catch (error) {
                     console.error('Error al crear la mesa:', error);
                     alert(`Error al crear la mesa: ${error.message}`);
                 }
             } else {
-                alert('Por favor, completa todos los campos y asegúrate de que la capacidad sea un número positivo.');
+                alert('Por favor, completa todos los campos y asegúrate de que la capacidad sea un número positivo y se haya seleccionado un piso.');
             }
         });
 
@@ -644,14 +855,21 @@
             button.addEventListener('click', function() {
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                alert(`Haz clic en ${this.textContent}. Funcionalidad por implementar.`);
+                // Si el botón de "Piso" es clicado, recargar los pisos y mesas
+                if (this.id === 'btnPiso') {
+                    fetchAndRenderFloors();
+                } else {
+                    alert(`Haz clic en ${this.textContent}. Funcionalidad por implementar.`);
+                }
             });
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchAndRenderTables();
-            if (navButtons.length > 0) {
-                navButtons[0].classList.add('active');
+            fetchAndRenderFloors(); // Cargar pisos al inicio
+            // Asegurarse de que el botón "Piso" esté activo al cargar la página
+            const btnPiso = document.getElementById('btnPiso');
+            if (btnPiso) {
+                btnPiso.classList.add('active');
             }
         });
 

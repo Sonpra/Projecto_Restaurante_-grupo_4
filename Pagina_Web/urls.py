@@ -12,5 +12,10 @@ urlpatterns = [
     # Rutas para la API de Mesas
     path('api/mesas/', views.mesas_api, name='mesas_list_create'),
     re_path(r'^api/mesas/(?P<table_id>\d+)/$', views.mesas_api, name='mesas_detail'),
+
+    # NUEVAS Rutas para la API de Pisos
+    path('api/pisos/', views.pisos_api, name='pisos_list_create'),
+    re_path(r'^api/pisos/(?P<piso_id>\d+)/$', views.pisos_api, name='pisos_detail'),
+    
     path('', views.login_view, name='root_login'),
 ]
