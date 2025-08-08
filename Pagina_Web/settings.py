@@ -1,11 +1,11 @@
 # Pagina_Web/Pagina_Web/settings.py
 
 from pathlib import Path
-import os # Importa 'os' si aún no está
+import os 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-o5s8i==d+@6h6snsu#k9-kcwd*&3ytg%rsy$v5ti^-)g5k)$1h' # Mantén tu propia SECRET_KEY
+SECRET_KEY = 'django-insecure-o5s8i==d+@6h6snsu#k9-kcwd*&3ytg%rsy$v5ti^-)g5k)$1h' 
 DEBUG = True
 ALLOWED_HOSTS = []
 
@@ -18,14 +18,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_filters',
-    'Pagina_Web', # ¡Asegúrate de que tu app 'Pagina_Web' esté aquí!
+    'Pagina_Web',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.middleware.csrf.CsrfViewMiddleware', # Mantén este middleware por ahora
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -36,7 +35,7 @@ ROOT_URLCONF = 'Pagina_Web.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'Pagina_Web', 'templates', 'Pagina_Web')], # <-- CAMBIO AQUI
+        'DIRS': [os.path.join(BASE_DIR, 'Pagina_Web', 'templates', 'Pagina_Web')], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
