@@ -20,5 +20,4 @@ urlpatterns = [
     path('historial/', views.historial_view, name='historial'),
 
     # Rutas de la API (definida una sola vez)
-    path('api/', include(router.urls)),
-]
+    path('api/', include(router.urls)),]

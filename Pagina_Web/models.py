@@ -1,3 +1,4 @@
+# MultipleFiles/models.py
 from django.db import models
 
 # --- Modelo 1: Mesa ---
@@ -10,7 +11,8 @@ class Mesa(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     capacidad = models.IntegerField(default=4)
     estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='Libre')
-
+    # Nueva relación con Piso
+    piso = models.ForeignKey(Piso, on_delete=models.SET_NULL, null=True, blank=True, related_name='mesas')
     def __str__(self):
         return self.nombre
 
