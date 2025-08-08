@@ -6,7 +6,7 @@ class Mesa(models.Model):
     ESTADO_CHOICES = [
     ('Libre', 'Libre'),
     ('Ocupada', 'Ocupada'),
-    ('Pendiente', 'Pendiente'), # <-- AÑADE ESTA LÍNEA
+    ('Pendiente', 'Pendiente'), 
 ]
     nombre = models.CharField(max_length=100, unique=True)
     capacidad = models.IntegerField(default=4)
@@ -25,7 +25,7 @@ class Plato(models.Model):
         ('Bebida', 'Bebida'),
     ]
     nombre = models.CharField(max_length=200)
-    descripcion = models.TextField(blank=True) # blank=True significa que es opcional
+    descripcion = models.TextField(blank=True) 
     precio = models.IntegerField()
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES)
     # Para que ImageField funcione, necesitamos instalar la librería Pillow
