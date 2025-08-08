@@ -1,21 +1,23 @@
 from django.contrib import admin
-from django.urls import path, re_path # Importa re_path para URLs con IDs
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from Pagina_Web import views
+
+router = DefaultRouter()
+router.register(r'mesas', views.MesaViewSet, basename='mesa')
+router.register(r'platos', views.PlatoViewSet, basename='plato')
+router.register(r'pedidos', views.PedidoViewSet, basename='pedido')
+router.register(r'detalles', views.DetallePedidoViewSet, basename='detallepedido')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Rutas de autenticación y páginas
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('admin_dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
+    path('historial/', views.historial_view, name='historial'),
 
-    # Rutas para la API de Mesas
-    path('api/mesas/', views.mesas_api, name='mesas_list_create'),
-    re_path(r'^api/mesas/(?P<table_id>\d+)/$', views.mesas_api, name='mesas_detail'),
-
-    # NUEVAS Rutas para la API de Pisos
-    path('api/pisos/', views.pisos_api, name='pisos_list_create'),
-    re_path(r'^api/pisos/(?P<piso_id>\d+)/$', views.pisos_api, name='pisos_detail'),
-    
-    path('', views.login_view, name='root_login'),
-]
+    # Rutas de la API (definida una sola vez)
+    path('api/', include(router.urls)),]

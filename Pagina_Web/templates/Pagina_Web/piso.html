@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestion</title>
+    </head>
+<body>
+    <div class="navbar">
+        <h1>Sistema de Gestion</h1>
+        <div class="navbar-buttons">
+            <a href="#" class="nav-button active" id="btnPiso">Piso</a>
+            <a href="#" class="nav-button" id="btnCarta">Carta</a>
+            <a href="#" class="nav-button" id="btnHistorial">Historial</a>
+            <a href="#" class="nav-button" id="btnRestaurante">Restaurante</a>
+            <a href="#" class="logout-btn">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="tables-section">
+            <div class="tables-header">
+                <h2>Mesas del Restaurante</h2>
+                <button class="create-table-btn" onclick="openCreateTableModal()">Crear Mesa</button>
+            </div>
+            <div class="tables-grid">
+                </div>
+        </div>
+
+        <div class="order-details-section">
+            <h2 id="detailsPanelTitle">Detalles de la Mesa</h2>
+            <div id="order-details-content" class="empty-state">
+                <p>Selecciona una mesa para ver y gestionar sus detalles.</p>
+            </div>
+        </div>
+    </div>
+    
+    </body>
+</html>
