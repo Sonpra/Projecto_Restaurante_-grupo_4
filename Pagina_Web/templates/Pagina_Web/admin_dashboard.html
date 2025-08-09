@@ -1,74 +1,139 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Administrador - SGPR</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
-        .navbar { background-color: #dc3545; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .navbar h1 { margin: 0; font-size: 24px; }
-        .navbar a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; transition: background-color 0.3s ease; }
-        .navbar a:hover { background-color: #c82333; }
-        .container { flex: 1; padding: 20px; max-width: 1200px; margin: 20px auto; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h2 { color: #333; margin-bottom: 25px; text-align: center; }
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
-        .card { background-color: #ffe0b2; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .card h3 { color: #e65100; margin-top: 0; }
-        .card p { color: #555; font-size: 1.1em; }
-        .admin-options { margin-top: 40px; text-align: center; }
-        .admin-options a { display: inline-block; background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; margin: 10px; transition: background-color 0.3s ease; }
-        .admin-options a:hover { background-color: #0056b3; }
-        .messages { list-style: none; padding: 15px; margin: 20px auto 0; max-width: 1200px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 5px; text-align: center; }
-        .messages li { margin: 0; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    </style>
+    <title>Panel de Administrador - SGPR</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 </head>
 <body>
     <div class="navbar">
-        <h1>SGPR - Dashboard de Administrador</h1>
-        <div>
-            <a href="{% url 'dashboard' %}">Volver al Dashboard General</a>
-            <a href="{% url 'logout' %}">Cerrar Sesión</a>
+        <h1>SGPR - Panel de Administrador</h1>
+        <div class="navbar-buttons">
+            <a href="{% url 'admin_dashboard' %}" class="nav-button active">Gestionar Mesas</a>
+            <a href="{% url 'historial' %}" class="nav-button">Historial</a>
+            <a href="{% url 'carta' %}" class="nav-button">Carta</a>
+            <a href="{% url 'restaurante' %}" class="nav-button">Restaurante</a>
+            <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
         </div>
     </div>
 
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-    <div class="container">
-        <h2>Bienvenido, Administrador {{ user.username }}</h2>
-
-        <div class="card-grid">
-            <div class="card">
-                <h3>Gestión de Pedidos</h3>
-                <p>Revisar, asignar y finalizar todos los pedidos del restaurante.</p>
-            </div>
-            <div class="card">
-                <h3>Gestión de Usuarios</h3>
-                <p>Añadir, modificar o eliminar cuentas de meseros, cocineros y otros empleados.</p>
-            </div>
-            <div class="card">
-                <h3>Gestión de Menú</h3>
-                <p>Actualizar platos, precios e inventario de ingredientes.</p>
-            </div>
-            <div class="card">
-                <h3>Reportes y Estadísticas</h3>
-                <p>Acceder a informes de ventas, rendimiento y stock.</p>
+    <div class="main-content" style="display: block; flex-direction: column;">
+        
+        {% csrf_token %}
+        <div class="tables-header">
+            <h2>Gestionar Mesas</h2>
+            <div>
+                <button id="manage-floors-btn" class="create-table-btn" style="background-color: #6c757d;">Gestionar Pisos</button>
+                <button id="main-create-table-btn" class="create-table-btn">Crear Nueva Mesa</button>
             </div>
         </div>
+        
+        <div class="menu-tabs" id="floors-tabs-container">
+        </div>
+        
+        <div class="tables-grid" id="admin-tables-grid">
+        </div>
 
-        <div class="admin-options">
-            <h3>Opciones de Administrador</h3>
-            <a href="/admin/">Acceder al Panel de Administración de Django</a>
-            <a href="#">Gestionar Mesas</a>
-            <a href="#">Configurar Roles</a>
+        <div class="reservations-section">
+            <div class="tables-header">
+                <h2>Gestionar Reservas</h2>
+                <div>
+                    <button id="main-register-incident-btn" class="create-table-btn" style="background-color: #ffc107; color: #333;">Registrar Incidente</button>
+                    <button id="main-create-reservation-btn" class="create-table-btn" style="background-color: #17a2b8;">Crear Reserva</button>
+                </div>
+            </div>
+            <div class="table-responsive-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Mesa</th>
+                            <th>Cliente</th>
+                            <th>Fecha y Hora</th>
+                            <th>Personas</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservations-table-body">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+    <div id="createTableModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Crear Nueva Mesa</h3>
+            <form id="createTableForm" class="modal-form">
+                <label for="tableFloor">Piso:</label>
+                <select id="tableFloor" required></select>
+                <label for="tableName">Nombre de la Mesa:</label>
+                <input type="text" id="tableName" required>
+                <label for="tableCapacity">Capacidad:</label>
+                <input type="number" id="tableCapacity" min="1" value="4" required>
+                <div class="form-actions">
+                    <button type="button" id="cancel-create-table-btn" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-create">Crear Mesa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="reservationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="reservationModalTitle">Crear Nueva Reserva</h3>
+            <form id="reservationForm" class="modal-form">
+                <input type="hidden" id="reservationId">
+                <label for="reservationTable">Mesa:</label>
+                <select id="reservationTable" required></select>
+                <label for="reservationClient">Nombre del Cliente:</label>
+                <input type="text" id="reservationClient" required>
+                <label for="reservationDateTime">Fecha y Hora:</label>
+                <input type="datetime-local" id="reservationDateTime" required>
+                <label for="reservationGuests">Cantidad de Personas:</label>
+                <input type="number" id="reservationGuests" min="1" required>
+                <label for="reservationNotes">Notas (Opcional):</label>
+                <textarea id="reservationNotes" rows="3"></textarea>
+                <div class="form-actions">
+                    <button type="button" id="cancel-reservation-btn" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-create">Guardar Reserva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="incidentModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Registrar Incidente</h3>
+            <form id="incidentForm" class="modal-form">
+                <label for="incidentType">Tipo de Incidente:</label>
+                <select id="incidentType" required>
+                    <option value="Sugerencia">Sugerencia</option>
+                    <option value="Queja">Queja</option>
+                </select>
+                <label for="incidentMessage">Mensaje:</label>
+                <textarea id="incidentMessage" rows="5" required></textarea>
+                <div class="form-actions">
+                    <button type="button" id="cancel-incident-btn" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-create">Guardar Incidente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="manageFloorsModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Gestionar Pisos del Restaurante</h3>
+            <div id="current-floors-list" style="margin-bottom: 20px;"></div>
+            <div class="form-actions" style="justify-content: space-between;">
+                <button type="button" id="delete-last-floor-btn" class="btn-cancel" style="background-color: #dc3545;">Eliminar Último Piso</button>
+                <div>
+                    <button type="button" id="cancel-manage-floors-btn" class="btn-cancel">Cerrar</button>
+                    <button type="button" id="add-new-floor-btn" class="btn-create">Añadir Nuevo Piso</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/admin_dashboard.js' %}" defer></script>
 </body>
 </html>

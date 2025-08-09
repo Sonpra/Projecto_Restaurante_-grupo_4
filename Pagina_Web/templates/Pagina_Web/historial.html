@@ -32,11 +32,12 @@
     <div class="navbar">
         <h1>SGPR - Historial</h1>
         <div class="navbar-buttons">
-            <a href="{% url 'dashboard' %}" class="nav-button">Dashboard</a>
+            <a href="{% url 'dashboard' %}" class="nav-button">Mesas</a>
             <a href="{% url 'historial' %}" class="nav-button active">Historial</a>
-            <a href="#" class="nav-button">Carta</a>
-            <a href="#" class="nav-button">Piso</a>
-            <a href="#" class="nav-button">Restaurante</a>
+            <a href="{% url 'carta' %}" class="nav-button">Carta</a>
+            {% if user.is_staff %}
+                <a href="{% url 'restaurante' %}" class="nav-button">Restaurante</a>
+            {% endif %}
             <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
         </div>
     </div>
@@ -55,7 +56,15 @@
                 </tr>
             </thead>
             <tbody id="history-table-body">
-                </tbody>
+                {% for pedido in pedidos %}
+                    <tr>
+                        <td>{{ pedido.id }}</td>
+                        <td>{{ pedido.fecha_creacion }}</td>
+                        <td>{{ pedido.mesa }}</td>
+                        <td>{{ pedido.completado }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 

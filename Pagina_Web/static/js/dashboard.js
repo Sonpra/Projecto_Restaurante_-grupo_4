@@ -1,222 +1,316 @@
-// --- Selectores y Variables Globales ---
-const tablesGrid = document.querySelector('.tables-grid');
-const detailsPanelTitle = document.getElementById('detailsPanelTitle');
-const orderDetailsContent = document.getElementById('order-details-content');
-let activeTableId = null;
-let activePedido = null;
-
-// --- Funciones de la API y Renderizado ---
-async function handleApiResponse(response) {
-    if (response.status === 204) { return null; }
-    const textData = await response.text();
-    if (!response.ok) {
-        let errorDetails = {};
-        try { errorDetails = JSON.parse(textData); } catch (e) {
-            errorDetails.detail = textData || `Error HTTP: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorDetails.detail || `Error desconocido`);
-    }
-    try { return JSON.parse(textData); } catch (e) {
-        console.warn('Respuesta de API no es JSON válido:', textData);
-        return null;
-    }
-}
-
-async function fetchAndRenderTables() {
-    try {
-        const tablesData = await fetch('/api/mesas/').then(handleApiResponse);
-        tablesGrid.innerHTML = '';
-        if (!tablesData || tablesData.length === 0) {
-            tablesGrid.innerHTML = '<p style="text-align: center; color: #777; margin-top: 50px;">No hay mesas disponibles.</p>';
-            select_table(null);
-        } else {
-            tablesData.forEach(table => {
-                const tableCard = document.createElement('div');
-                tableCard.classList.add('table-card');
-                if (table.id === activeTableId) { tableCard.classList.add('active'); }
-                const statusClass = `status-${table.estado.replace(/\s/g, '')}`;
-                tableCard.innerHTML = `<h3>${table.nombre}</h3><p>Capacidad: ${table.capacidad}</p><span class="table-status ${statusClass}">${table.estado}</span>`;
-                tableCard.dataset.tableId = table.id;
-                tableCard.addEventListener('click', () => select_table(table.id));
-                tablesGrid.appendChild(tableCard);
-            });
-            const mesaActivaExiste = tablesData.some(mesa => mesa.id === activeTableId);
-            if (activeTableId === null || !mesaActivaExiste) {
-                select_table(tablesData[0].id);
-            } else {
-                select_table(activeTableId);
+// --- Bloque de Seguridad (CSRF) y API Fetch ---
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
-    } catch (error) {
-        console.error('Error al cargar las mesas:', error);
     }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+async function apiFetch(url, options = {}) {
+    options.headers = {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+        ...options.headers,
+    };
+    if (options.body && typeof options.body !== 'string') {
+        options.body = JSON.stringify(options.body);
+    }
+    const response = await fetch(url, options);
+    if (response.status === 204) return null;
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.detail || data.error || 'Error en la petición');
+    }
+    return data;
 }
 
-async function select_table(tableId) {
-    activeTableId = tableId;
-    document.querySelectorAll('.table-card').forEach(card => {
-        card.classList.toggle('active', parseInt(card.dataset.tableId) === activeTableId);
-    });
+// --- Lógica del Dashboard de Empleado ---
+document.addEventListener('DOMContentLoaded', () => {
+    const tablesGrid = document.querySelector('.tables-grid');
+    const detailsPanelTitle = document.getElementById('detailsPanelTitle');
+    const orderDetailsContent = document.getElementById('orderDetailsContent');
+    const menuModal = document.getElementById('menuModal');
+    const menuItemsContainer = document.getElementById('menu-items-container');
+    const closeMenuModalBtn = document.getElementById('close-menu-modal-btn');
 
-    if (tableId) {
+    let activeTableId = null;
+    let activePedido = null;
+
+    async function fetchAndRenderTables() {
         try {
-            const selectedTable = await fetch(`/api/mesas/${tableId}/`).then(handleApiResponse);
-            if (!selectedTable) return;
-
-            detailsPanelTitle.textContent = `Detalles de ${selectedTable.nombre}`;
-            orderDetailsContent.classList.remove('empty-state');
-            
-            if (selectedTable.estado === 'Libre') {
-                activePedido = null;
-                orderDetailsContent.innerHTML = `
-                    <div class="detail-group"><span class="detail-label">Estado:</span><span class="detail-value">Esta mesa está libre.</span></div>
-                    <button class="create-table-btn" onclick="iniciarPedido(${tableId})">Iniciar Pedido</button>
-                `;
-            } else { // Si está Ocupada o Pendiente
-                const pedidos = await fetch(`/api/pedidos/?mesa=${tableId}&completado=false`).then(handleApiResponse);
-                if (pedidos && pedidos.length > 0) {
-                    activePedido = pedidos[0];
-                    let detallesHTML = activePedido.detalles.length === 0 ? '<p>El pedido está vacío.</p>' :
-                        activePedido.detalles.map(detalle => `
-                            <div class="order-item">
-                                <span>${detalle.cantidad}x ${detalle.plato.nombre}</span>
-                                <div class="order-item-actions">
-                                    <span>$${(detalle.subtotal).toLocaleString('es-CL')}</span>
-                                    <button class="remove-item-btn" onclick="removerPlatoDelPedido(${detalle.plato.id})">&times;</button>
-                                </div>
-                            </div>`).join('');
+            const tablesData = await apiFetch('/api/mesas/');
+            tablesGrid.innerHTML = '';
+            if (!tablesData || tablesData.length === 0) {
+                tablesGrid.innerHTML = '<p>No hay mesas disponibles.</p>';
+                select_table(null);
+            } else {
+                tablesData.forEach(table => {
+                    const tableCard = document.createElement('div');
+                    tableCard.classList.add('table-card');
+                    if (table.id === activeTableId) tableCard.classList.add('active');
                     
-                    orderDetailsContent.innerHTML = `
-                        <h4>Pedido #${activePedido.id}</h4>
-                        <div id="order-items-container">${detallesHTML}</div><hr>
-                        <div class="order-total"><strong>TOTAL:</strong><strong>$${(activePedido.total).toLocaleString('es-CL')}</strong></div>
-                        <div class="order-main-actions">
-                            <button class="add-products-btn" onclick="openMenuModal()">Añadir Productos</button>
-                            <button class="finalize-btn" onclick="finalizarPedido(${activePedido.id})">Finalizar y Pagar</button>
-                        </div>`;
+                    const statusClass = `status-${table.estado.replace(/\s/g, '')}`;
+                    tableCard.innerHTML = `<h3>${table.nombre}</h3><p>Capacidad: ${table.capacidad}</p><span class="table-status ${statusClass}">${table.estado}</span>`;
+                    tableCard.dataset.tableId = table.id;
+                    tableCard.addEventListener('click', () => select_table(table.id));
+                    tablesGrid.appendChild(tableCard);
+                });
+                
+                if (activeTableId === null || !tablesData.some(t => t.id === activeTableId)) {
+                    if (tablesData.length > 0) select_table(tablesData[0].id);
                 } else {
-                    orderDetailsContent.innerHTML = `<p>La mesa está ${selectedTable.estado} pero no tiene pedido activo.</p>
-                        <button class="create-table-btn" onclick="iniciarPedido(${tableId})">Iniciar Nuevo Pedido</button>`;
+                    select_table(activeTableId);
                 }
             }
         } catch (error) {
-            console.error('Error al seleccionar la mesa:', error);
+            console.error('Error al cargar las mesas:', error);
+            tablesGrid.innerHTML = `<p style="color: red;">Error al cargar mesas.</p>`;
         }
-    } else {
-        detailsPanelTitle.textContent = 'Detalles de la Mesa';
-        orderDetailsContent.innerHTML = '<p>Selecciona una mesa.</p>';
-        orderDetailsContent.classList.add('empty-state');
-        activePedido = null;
     }
-}
 
-async function iniciarPedido(tableId) {
-    try {
-        await fetch(`/api/mesas/${tableId}/iniciar_pedido/`, { method: 'POST' });
-        await fetchAndRenderTables();
-        select_table(tableId);
-    } catch (error) { console.error('Error al iniciar el pedido:', error); }
-}
+    async function select_table(tableId) {
+        activeTableId = tableId;
+        document.querySelectorAll('.table-card').forEach(card => {
+            card.classList.toggle('active', parseInt(card.dataset.tableId) === activeTableId);
+        });
 
-async function finalizarPedido(pedidoId) {
-    if (confirm('¿Estás seguro de que quieres finalizar y cobrar este pedido?')) {
+        if (!tableId) {
+            detailsPanelTitle.textContent = 'Detalles de la Mesa';
+            orderDetailsContent.innerHTML = '<p>Selecciona una mesa.</p>';
+            activePedido = null;
+            return;
+        }
+
         try {
-            await fetch(`/api/pedidos/${pedidoId}/finalizar/`, { method: 'POST' });
+            const selectedTable = await apiFetch(`/api/mesas/${tableId}/`);
+            detailsPanelTitle.textContent = `Detalles de ${selectedTable.nombre}`;
+            orderDetailsContent.classList.remove('empty-state');
+
+            if (selectedTable.estado === 'Libre') {
+                activePedido = null;
+                orderDetailsContent.innerHTML = `
+                    <div class="detail-group">
+                        <span class="detail-label">Estado:</span>
+                        <span class="detail-value">Esta mesa está libre.</span>
+                    </div>
+                    <button class="create-table-btn" onclick="iniciarPedido(${tableId})">Iniciar Pedido</button>`;
+            } else if (selectedTable.estado === 'Ocupada') {
+                const pedidos = await apiFetch(`/api/pedidos/?mesa=${tableId}&completado=false`);
+                if (pedidos && pedidos.length > 0) {
+                    activePedido = pedidos[0];
+                    renderOrderDetails(activePedido);
+                } else {
+                    orderDetailsContent.innerHTML = `<p>Error: La mesa está ocupada pero no se encontró un pedido activo.</p>`;
+                }
+            } else { // Para estados como 'Reservada' o 'Mantenimiento'
+                activePedido = null;
+                orderDetailsContent.innerHTML = `
+                    <div class="detail-group">
+                        <span class="detail-label">Estado:</span>
+                        <span class="detail-value">Mesa no disponible (${selectedTable.estado}).</span>
+                    </div>`;
+            }
+        } catch (error) {
+            console.error('Error al seleccionar la mesa:', error);
+            orderDetailsContent.innerHTML = `<p style="color: red;">Error al cargar detalles de la mesa.</p>`;
+        }
+    }
+
+    function renderOrderDetails(pedido) {
+        let detallesHTML = pedido.detalles.length === 0 ? '<p>El pedido está vacío.</p>' :
+            pedido.detalles.map(detalle => `
+                <div class="order-item">
+                    <span>${detalle.cantidad}x ${detalle.plato.nombre}</span>
+                    <div class="order-item-actions">
+                        <span>$${(detalle.subtotal).toLocaleString('es-CL')}</span>
+                        <button class="remove-item-btn" onclick="removerPlatoDelPedido(${detalle.plato.id})">&times;</button>
+                    </div>
+                </div>`).join('');
+
+        orderDetailsContent.innerHTML = `
+            <h4>Pedido #${pedido.id}</h4>
+            <div id="order-items-container">${detallesHTML}</div><hr>
+            <div class="order-total"><strong>TOTAL:</strong><strong>$${(pedido.total).toLocaleString('es-CL')}</strong></div>
+            <div class="order-main-actions">
+                <button class="add-products-btn" onclick="openMenuModal()">Añadir Productos</button>
+                <button class="finalize-btn" onclick="finalizarPedido(${pedido.id})">Finalizar y Pagar</button>
+            </div>`;
+    }
+
+    window.iniciarPedido = async function(tableId) {
+        try {
+            await apiFetch(`/api/mesas/${tableId}/iniciar_pedido/`, { method: 'POST' });
             await fetchAndRenderTables();
         } catch (error) {
-            console.error('Error al finalizar el pedido:', error);
-            alert('Error al finalizar el pedido.');
+            alert(`Error al iniciar el pedido: ${error.message}`);
         }
     }
-}
 
-async function loadMenu() {
-    const menuContainer = document.getElementById('menu-items-container');
-    try {
-        const platos = await fetch('/api/platos/').then(handleApiResponse);
-        const menuAgrupado = {'Entrada':[],'Fondo':[],'Postre':[],'Bebida':[]};
-        const ordenCategorias = ['Entrada', 'Fondo', 'Postre', 'Bebida'];
-        platos.forEach(plato => {
-            if (menuAgrupado.hasOwnProperty(plato.categoria)) {
-                menuAgrupado[plato.categoria].push(plato);
+    window.finalizarPedido = async function(pedidoId) {
+        if (confirm('¿Estás seguro de que quieres finalizar y cobrar este pedido?')) {
+            try {
+                await apiFetch(`/api/pedidos/${pedidoId}/finalizar/`, { method: 'POST' });
+                await fetchAndRenderTables();
+            } catch (error) {
+                alert(`Error al finalizar el pedido: ${error.message}`);
             }
-        });
-        let tabsHTML = '<div class="menu-tabs">';
-        let contentHTML = '<div class="menu-tab-content">';
-        ordenCategorias.forEach((categoria, index) => {
-            const platosDeCategoria = menuAgrupado[categoria];
-            const isActive = index === 0 ? 'active' : '';
-            tabsHTML += `<button class="tab-button ${isActive}" onclick="openMenuTab(event, '${categoria}')">${categoria}</button>`;
-            contentHTML += `<div id="${categoria}" class="menu-tab-pane ${isActive}">`;
-            if (platosDeCategoria.length > 0) {
-                platosDeCategoria.forEach(plato => {
-                    contentHTML += `<div class="menu-item"><span>${plato.nombre} - $${plato.precio.toLocaleString('es-CL')}</span><button onclick="addPlatoToPedido(${plato.id})">Agregar</button></div>`;
-                });
-            } else { contentHTML += '<p>No hay productos en esta categoría.</p>'; }
-            contentHTML += '</div>';
-        });
-        tabsHTML += '</div>';
-        contentHTML += '</div>';
-        menuContainer.innerHTML = tabsHTML + contentHTML;
-    } catch (error) {
-        console.error('Error al cargar la carta:', error);
-        menuContainer.innerHTML = '<p>Error al cargar la carta.</p>';
+        }
     }
-}
+    
+    // --- Lógica del Modal del Menú ---
+    window.openMenuModal = function() {
+        if (!activePedido) {
+            alert('Debes tener un pedido activo para añadir productos.');
+            return;
+        }
+        menuModal.classList.add('show');
+    }
+    
+    function closeMenuModal() {
+        menuModal.classList.remove('show');
+    }
+    
+    closeMenuModalBtn.addEventListener('click', closeMenuModal);
+    
+    async function loadMenu() {
+        try {
+            const platos = await apiFetch('/api/platos/');
+            menuItemsContainer.innerHTML = '';
+            
+            if (!platos || platos.length === 0) {
+                menuItemsContainer.innerHTML = '<p>No hay productos disponibles.</p>';
+                return;
+            }
+            
+            // Agrupar por categoría
+            const categorias = [...new Set(platos.map(p => p.categoria))];
+            
+            let menuHTML = '<div class="menu-tabs">';
+            categorias.forEach((cat, index) => {
+                menuHTML += `<button class="tab-button" data-category="${cat}">${cat}</button>`;
+            });
+            menuHTML += '</div><div class="menu-items">';
+            
+            categorias.forEach(cat => {
+                menuHTML += `<div class="menu-category" data-category="${cat}">`;
+                platos.filter(p => p.categoria === cat).forEach(plato => {
+                    menuHTML += `
+                        <div class="menu-item">
+                            <div class="menu-item-info">
+                                <h4>${plato.nombre}</h4>
+                                <p>${plato.descripcion || ''}</p>
+                                <span>$${plato.precio.toLocaleString('es-CL')}</span>
+                            </div>
+                            <button onclick="addPlatoToPedido(${plato.id})">+</button>
+                        </div>`;
+                });
+                menuHTML += '</div>';
+            });
+            
+            menuHTML += '</div>';
+            menuItemsContainer.innerHTML = menuHTML;
+            
+            // Activar primera categoría
+            const firstTab = document.querySelector('.menu-tabs .tab-button');
+            if (firstTab) firstTab.classList.add('active');
+            const firstCategory = document.querySelector('.menu-category');
+            if (firstCategory) firstCategory.style.display = 'block';
+            
+            // Eventos para cambiar categorías
+            document.querySelectorAll('.menu-tabs .tab-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.menu-tabs .tab-button').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.menu-category').forEach(c => c.style.display = 'none');
+                    
+                    btn.classList.add('active');
+                    const category = btn.dataset.category;
+                    document.querySelector(`.menu-category[data-category="${category}"]`).style.display = 'block';
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error cargando menú:', error);
+            menuItemsContainer.innerHTML = '<p>Error al cargar el menú.</p>';
+        }
+    }
+    
+    window.addPlatoToPedido = async function(platoId) {
+        if (!activePedido) return;
+        try {
+            const updatedPedido = await apiFetch(`/api/pedidos/${activePedido.id}/agregar_plato/`, {
+                method: 'POST', body: { plato_id: platoId }
+            });
+            activePedido = updatedPedido;
+            renderOrderDetails(updatedPedido); // Actualiza solo el panel de detalles
+            closeMenuModal();
+        } catch (error) { alert(`Error al agregar el plato: ${error.message}`); }
+    }
 
-async function addPlatoToPedido(platoId) {
-    if (!activePedido) { return; }
-    try {
-        const updatedPedido = await fetch(`/api/pedidos/${activePedido.id}/agregar_plato/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plato_id: platoId })
-        }).then(handleApiResponse);
-        activePedido = updatedPedido;
-        select_table(activeTableId);
-        closeMenuModal();
-    } catch (error) { console.error('Error al agregar el plato:', error); }
-}
+    window.removerPlatoDelPedido = async function(platoId) {
+        if (!activePedido) return;
+        try {
+            const updatedPedido = await apiFetch(`/api/pedidos/${activePedido.id}/remover_plato/`, {
+                method: 'POST', body: { plato_id: platoId }
+            });
+            activePedido = updatedPedido;
+            renderOrderDetails(updatedPedido); // Actualiza solo el panel de detalles
+        } catch (error) { alert(`Error al remover el plato: ${error.message}`); }
+    }
+    
+    // --- LÓGICA PARA CARGAR INCIDENTES ---
+    async function fetchAndRenderIncidents() {
+        const incidentsList = document.getElementById('incidents-list');
+        if (!incidentsList) return; 
 
-async function removerPlatoDelPedido(platoId) {
-    if (!activePedido) { return; }
-    try {
-        const updatedPedido = await fetch(`/api/pedidos/${activePedido.id}/remover_plato/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plato_id: platoId })
-        }).then(handleApiResponse);
-        activePedido = updatedPedido;
-        select_table(activeTableId);
-    } catch (error) { console.error('Error al remover el plato:', error); }
-}
+        try {
+            const incidents = await apiFetch('/api/incidentes/?visto=false');
+            incidentsList.innerHTML = '';
 
-function openMenuTab(evt, categoryName) {
-    document.querySelectorAll('.menu-tab-pane').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
-    document.getElementById(categoryName).classList.add('active');
-    evt.currentTarget.classList.add('active');
-}
+            if (!incidents || incidents.length === 0) {
+                incidentsList.innerHTML = '<p class="empty-state">No hay novedades.</p>';
+                return;
+            }
 
-function openMenuModal() { document.getElementById('menuModal').classList.add('show'); }
-function closeMenuModal() { document.getElementById('menuModal').classList.remove('show'); }
+            incidents.forEach(inc => {
+                const incidentCard = document.createElement('div');
+                incidentCard.className = `incident-card ${inc.tipo.toLowerCase()}`;
+                incidentCard.innerHTML = `
+                    <h4>${inc.tipo}</h4>
+                    <p>${inc.mensaje}</p>
+                    <button data-id="${inc.id}">Marcar como Visto</button>
+                `;
+                incidentsList.appendChild(incidentCard);
+            });
+        } catch (error) {
+            console.error('Error al cargar incidentes:', error);
+            incidentsList.innerHTML = '<p style="color: red;">Error al cargar novedades.</p>';
+        }
+    }
 
-
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('click', async (event) => {
+        const targetButton = event.target.closest('.incident-card button');
+        if (targetButton) {
+            const incidentId = targetButton.dataset.id;
+            try {
+                await apiFetch(`/api/incidentes/${incidentId}/marcar_visto/`, { method: 'POST' });
+                fetchAndRenderIncidents(); 
+            } catch (error) {
+                alert('Error al marcar como visto.');
+            }
+        }
+    });
+    
+    // Carga inicial de todo
     fetchAndRenderTables();
     loadMenu();
-    
-    const closeMenuBtn = document.getElementById('close-menu-modal-btn');
-    if (closeMenuBtn) { closeMenuBtn.addEventListener('click', closeMenuModal); }
-    
-    const navButtons = document.querySelectorAll('.nav-button');
-    if (navButtons.length > 0) {
-        const currentPage = window.location.pathname;
-        navButtons.forEach(button => {
-            button.classList.remove('active');
-            if (button.getAttribute('href') === currentPage) {
-                button.classList.add('active');
-            }
-        });
-    }
+    fetchAndRenderIncidents();
 });

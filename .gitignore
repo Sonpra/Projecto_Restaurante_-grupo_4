@@ -7,10 +7,12 @@ __pycache__/
 *.log
 *.pot
 *.pyc
+*.pyo
+*.pyd
 media/
-staticfiles/
+/staticfiles/
 .env
-*.sqlite3
+db.sqlite3
 **/migrations/*.pyc
 **/migrations/__pycache__/
 *.code-workspace
@@ -20,3 +22,4 @@ staticfiles/
 *.bak
 *.tmp
 *~
+.idea/

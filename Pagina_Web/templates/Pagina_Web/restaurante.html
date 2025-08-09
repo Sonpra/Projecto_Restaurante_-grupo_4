@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión del Restaurante - SGPR</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+<body>
+    <div class="navbar">
+        <h1>SGPR - Panel de Administrador</h1>
+        <div class="navbar-buttons">
+            <a href="{% url 'admin_dashboard' %}" class="nav-button">Gestionar Mesas</a>
+            <a href="{% url 'historial' %}" class="nav-button">Historial</a>
+            <a href="{% url 'carta' %}" class="nav-button">Carta</a>
+            <a href="{% url 'restaurante' %}" class="nav-button active">Restaurante</a>
+            
+            <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <div class="main-content" style="display: block; flex-direction: column;">
+        <div class="tables-header">
+            <h2>Gestionar Empleados</h2>
+            <button id="main-create-employee-btn" class="create-table-btn">Crear Nuevo Empleado</button>
+        </div>
+        <div id="employee-list-container" class="table-responsive-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Nombres</th>
+                        <th>Apellidos</th>
+                        <th>Usuario</th>
+                        <th>RUT</th>
+                        <th>Nacionalidad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+        <tbody id="employee-table-body">
+            </tbody>
+    </table>
+</div>
+    </div>
+
+    <div id="createEmployeeModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Crear Nuevo Empleado</h3>
+            <form id="createEmployeeForm" class="modal-form">
+                <label for="employeeFirstName">Nombres:</label>
+                <input type="text" id="employeeFirstName" required>
+
+                <label for="employeeLastName">Apellidos:</label>
+                <input type="text" id="employeeLastName" required>
+
+                <label for="employeeRut">RUT:</label>
+                <input type="text" id="employeeRut" placeholder="Ej: 12345678-9">
+
+                <label for="employeeNationality">Nacionalidad:</label>
+                <input type="text" id="employeeNationality" value="Chilena">
+
+                <label for="employeePassword">Contraseña:</label>
+                <input type="password" id="employeePassword" required>
+                
+                <p style="font-size: 0.8em; color: #666; margin-top: -10px;">El nombre de usuario se generará automáticamente (ej: nombre.apellido).</p>
+
+                <div class="form-actions">
+                    <button type="button" id="cancel-create-employee-btn" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-create">Crear Empleado</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/restaurante.js' %}" defer></script>
+</body>
+</html>

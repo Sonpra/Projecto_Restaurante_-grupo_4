@@ -4,86 +4,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard General - SGPR</title>
+    <title>Dashboard - SGPR</title>
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-
 </head>
-<body data-is-admin="{{ is_admin|yesno:'true,false' }}">
-
+<body>
     <div class="navbar">
-        <h1>SGPR - Dashboard</h1>
+        <h1>SGPR - Inicio</h1>
         <div class="navbar-buttons">
-            <a href="{% url 'dashboard' %}" class="nav-button active">Dashboard</a>
+            <a href="{% url 'dashboard' %}" class="nav-button active">Mesas</a>
             <a href="{% url 'historial' %}" class="nav-button">Historial</a>
-            <a href="#" class="nav-button">Carta</a>
-            <a href="#" class="nav-button">Piso</a>
-            <a href="#" class="nav-button">Restaurante</a>
+            <a href="{% url 'carta' %}" class="nav-button">Carta</a>
             <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
         </div>
     </div>
-    </div> <h1 style="color: red; text-align: center;">DEBUG: ¿Es admin? {{ is_admin }}</h1>
-
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li{% if message.tags %} class="message {{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
 
     <div class="main-content">
         <div class="tables-section">
-            <div class="floor-selection">
-                <label for="floorSelector">Seleccionar Piso:</label>
-                <select id="floorSelector"></select>
-                <button class="add-floor-btn" onclick="openCreateFloorModal()">Añadir Piso</button>
-                <button class="delete-floor-btn" onclick="deleteSelectedFloor()">Eliminar Piso</button>
-            </div>
             <div class="tables-header">
                 <h2>Mesas del Restaurante</h2>
-                <button id="main-create-table-btn" class="create-table-btn">Crear Mesa</button>
             </div>
             <div class="tables-grid"></div>
         </div>
-        <div class="order-details-section">
-            <h2 id="detailsPanelTitle">Detalles de la Mesa</h2>
-            <div id="order-details-content" class="empty-state">
-                <p>Selecciona una mesa para ver y gestionar sus detalles.</p>
+
+        <div class="right-column">
+            <div class="order-details-section">
+                <h2 id="detailsPanelTitle">Detalles de la Mesa</h2>
+                <div id="orderDetailsContent" class="empty-state">
+                    <p>Selecciona una mesa.</p>
+                </div>
+            </div>
+
+            <div class="incidents-section">
+                <h2>Novedades</h2>
+                <div id="incidents-list">
+                    </div>
             </div>
         </div>
-    </div>
-
-    <!-- Modal para Crear Nueva Mesa -->
-    <div id="createTableModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Crear Nueva Mesa</h3>
-            <form id="createTableForm" class="modal-form">
-                <label for="tableName">Nombre de la Mesa:</label>
-                <input type="text" id="tableName" required>
-                <label for="tableCapacity">Capacidad:</label>
-                <input type="number" id="tableCapacity" min="1" value="4" required>
-                <label for="tableStatus">Estado Inicial:</label>
-                <select id="tableStatus" required>
-                    <option value="Libre">Libre</option>
-                    <option value="Ocupada">Ocupada</option>
-                    <option value="Pendiente">Pendiente</option>
-                </select>
-                <div class="form-actions">
-                    <button type="button" id="cancel-create-table-btn" class="btn-cancel">Cancelar</button>
-                    <button type="submit" class="btn-create">Crear Mesa</button>
-                </div>
-            </form>
         </div>
-    </div>
+
     <div id="menuModal" class="modal-overlay">
         <div class="modal-content">
             <h3>Carta del Restaurante</h3>
-            <div id="menu-items-container"></div>
+            <div id="menu-items-container"> 
+            </div>
             <div class="form-actions">
                 <button type="button" id="close-menu-modal-btn" class="btn-cancel">Cerrar</button>
             </div>
         </div>
     </div>
+
     <script src="{% static 'js/dashboard.js' %}" defer></script>
 </body>
 </html>

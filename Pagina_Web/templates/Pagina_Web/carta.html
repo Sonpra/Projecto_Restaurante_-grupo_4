@@ -1,0 +1,167 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carta - SGPR</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <style>
+        .carta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .carta-table th, .carta-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .carta-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .carta-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            padding-top: 100px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-contenido {
+            background-color: #fff;
+            margin: auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 40%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .cerrar {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .cerrar:hover {
+            color: black;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>SGPR - Carta</h1>
+        <div class="navbar-buttons">
+            <a href="{% url 'dashboard' %}" class="nav-button">Mesas</a>
+            <a href="{% url 'historial' %}" class="nav-button">Historial</a>
+            <a href="{% url 'carta' %}" class="nav-button active">Carta</a>
+            {% if user.is_staff %}
+                <a href="{% url 'restaurante' %}" class="nav-button">Restaurante</a>
+            {% endif %}
+            <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <div class="main-content" style="display: block; flex-direction: column;">
+        <div class="tables-header">
+            <h2>Carta del Restaurante</h2>
+            {% if user.is_staff %}
+                <button id="btnAbrirModal" class="btn-submit">Agregar Plato</button>
+            {% endif %}
+        </div>
+        <table class="carta-table">
+            <thead>
+                <tr>
+                    <th>Plato</th>
+                    <th>Descripción</th>
+                    <th>Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plato in platos %}
+                    <tr>
+                        <td>{{ plato.nombre }}</td>
+                        <td>{{ plato.descripcion }}</td>
+                        <td>€{{ plato.precio }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="modalPlato" class="modal">
+        <div class="modal-contenido">
+            <span class="cerrar" id="btnCerrarModal">&times;</span>
+            <h2>Agregar Nuevo Plato</h2>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_nombre">Nombre:</label>
+                    <input type="text" name="nombre" id="id_nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="id_descripcion">Descripción:</label>
+                    <textarea name="descripcion" id="id_descripcion" rows="3" required></textarea>
+                </div>
+                <div>
+                    <label for="categoria">Categoría:</label>
+                    <select name="categoria" required>
+                        <option value="Entrada">Entrada</option>
+                        <option value="Fondo">Plato de Fondo</option>
+                        <option value="Postre">Postre</option>
+                        <option value="Bebida">Bebida</option>
+                    </select><br><br>
+                </div>
+                <div class="form-group">
+                    <label for="id_precio">Precio (€):</label>
+                    <input type="number" name="precio" id="id_precio" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="id_imagen">Imagen:</label>
+                    <input type="file" name="imagen" id="id_imagen" accept="image/*">
+                </div>
+                <button type="submit" class="btn-submit">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('btnAbrirModal').onclick = function() {
+            document.getElementById('modalPlato').style.display = 'block';
+        };
+        document.getElementById('btnCerrarModal').onclick = function() {
+            document.getElementById('modalPlato').style.display = 'none';
+        };
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('modalPlato')) {
+                document.getElementById('modalPlato').style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>
