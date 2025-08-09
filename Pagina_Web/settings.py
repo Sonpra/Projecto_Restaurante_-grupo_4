@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'Pagina_Web',
+    'Pagina_Web',
 ]
 
 MIDDLEWARE = [
